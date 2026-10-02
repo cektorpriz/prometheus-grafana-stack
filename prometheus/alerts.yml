@@ -1,0 +1,34 @@
+# Alert rules. Prometheus evaluates these and pushes fired alerts
+# to Alertmanager, which routes them to Telegram.
+groups:
+  - name: generic
+    rules:
+      # A blackbox probe did not return a valid status code for 1 minute.
+      - alert: SiteDown
+        expr: probe_success == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Target is down (blackbox health-check)"
+          description: "Probe target {{ $labels.instance }} returned a non-200/error for 1 minute."
+
+      # CPU > 85% averaged over 5 minutes.
+      - alert: HighCPU
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU on {{ $labels.instance }} > 85% for 5 minutes."
+
+      # Memory > 90% used (available vs total).
+      - alert: HighMemory
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory on {{ $labels.instance }} > 90% for 5 minutes."

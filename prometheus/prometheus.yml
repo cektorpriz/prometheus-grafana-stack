@@ -1,0 +1,47 @@
+# Prometheus configuration for the reference monitoring stack.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alert rules (thresholds in alerts.yml).
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+# Where to send fired alerts.
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  # Prometheus' own metrics.
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # Host metrics (CPU / memory / disk / network) from node_exporter.
+  - job_name: "node"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  # Uptime / HTTP probes via blackbox_exporter.
+  # Replace the example targets with your real health endpoints.
+  #   https://example.com  -> external site reachable from this host
+  #   http://app:8080/health -> internal service (add to the "monitoring" network)
+  - job_name: "blackbox_health"
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://example.com
+          - http://app:8080/health
+    relabel_configs:
+      # Move the actual target into __param_target; Prometheus then scrapes
+      # blackbox-exporter instead of the target itself.
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115

@@ -1,0 +1,9 @@
+# blackbox_exporter modules. The "http_2xx" prober performs a plain HTTP GET
+# and succeeds only on a 2xx status code.
+modules:
+  http_2xx:
+    prober: http
+    timeout: 5s
+    http:
+      valid_status_codes: [200]
+      method: GET

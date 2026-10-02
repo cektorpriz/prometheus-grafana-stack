@@ -1,0 +1,25 @@
+# Alertmanager: routes Prometheus alerts to a Telegram receiver.
+#
+# TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are injected from the environment
+# (see docker-compose.yml: the container gets them from .env and runs with
+# --config.expand-env=true). Do NOT commit real tokens here.
+route:
+  receiver: telegram
+  group_by: ["alertname", "instance"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+receivers:
+  - name: telegram
+    telegram_configs:
+      - bot_token: "${TELEGRAM_BOT_TOKEN}"
+        chat_id: ${TELEGRAM_CHAT_ID}
+        parse_mode: HTML
+        message: |-
+          {{ range .Alerts }}
+          <b>{{ .Labels.alertname }}</b>
+          {{ .Annotations.summary }}
+          {{ if eq .Status "firing" }}🔴 FIRING{{ else }}🟢 RESOLVED{{ end }}
+          instance: {{ .Labels.instance }}
+          {{ end }}
